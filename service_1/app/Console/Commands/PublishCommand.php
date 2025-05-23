@@ -24,21 +24,33 @@ class PublishCommand extends Command
 
     /**
      * Execute the console command.
+     * @throws \Exception
      */
-    public function handle()
+    public function handle(): void
     {
-        $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $connection = new AMQPStreamConnection(
+            config('rabbitmq.host'),
+            config('rabbitmq.port'),
+            config('rabbitmq.username'),
+            config('rabbitmq.password')
+        );
+
         $channel = $connection->channel();
 
-        $channel->exchange_declare('laravel', 'fanout', false, true, false);
-        $channel->queue_declare('laravel', false, true, false, false);
+//        $channel->exchange_declare('laravel', 'fanout', false, true, false);
+//        $channel->queue_declare('laravel', false, true, false, false);
+//
+//        $channel->queue_bind('laravel', 'laravel');
 
-        $channel->queue_bind('laravel', 'laravel');
+        $data = [
+            'title' => 'Some title',
+            'content' => 'Some content',
+        ];
 
-        $msg = new AMQPMessage('Hello World!');
+        $msg = new AMQPMessage(json_encode($data, JSON_THROW_ON_ERROR));
         $channel->basic_publish($msg, 'laravel',);
 
-        echo " [x] Sent 'Hello World!'\n";
+        echo " [x] Sent DATA\n";
 
         $channel->close();
         $connection->close();
